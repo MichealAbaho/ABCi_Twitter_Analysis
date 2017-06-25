@@ -8,6 +8,9 @@ import tweepy
 from tweepy import Stream
 from tweepy import OAuthHandler
 from tweepy.streaming import StreamListener
+from datetime import datetime 
+from pymongo import MongoClient
+import pandas as pd
 import time
 
 consumer_key = "U7Tn8KhB97G91D748zGTfqK0Z"
@@ -22,17 +25,35 @@ access_secret = "qshdRpZ2jKq7CCYkCarr5ZYjqtxGnAZhwyNPFn010b0a4"
 # for tweets in public_tweets:
 #     print (t.text)
 #==============================================================================
+clientConnect = MongoClient()
+db = clientConnect.ABCi_twitter_analysis_DB
 
 class diseaseCommListener(StreamListener):
     
     def on_data(self, data):
         try:
-            rheumTweets = data.split(',"text":"')[1].split('","source')[0]
-            print (rheumTweets)
-            rheumCleanedTweets = str(time.time())+'::'+rheumTweets
-            rheumFile = open('rheum_tweets1.csv', 'a')
-            rheumFile.write(rheumCleanedTweets)
-            rheumFile.close()
+            rheum_tweet_text = data.split(',"text":"')[1].split('","source')[0]
+            rheum_tweeter = data.split(',"name":"')[1].split('","screen_name')[0]
+            rheum_tweet_loc = data.split(',"location":"')[1].split('","url')[0]
+            rheum_tweet_time = datetime.now().time()
+            rheum_tweet_date = datetime.now().date()
+            cleanedTime = rheum_tweet_time.strftime('%H:%M:%S')
+            cleanedDate = rheum_tweet_date.strftime('%d/%m/%Y')
+            
+            
+            db.live_rheum_tweets.insert_many([{
+                "User-Name":rheum_tweeter,
+                "Location": rheum_tweet_loc,
+                "Date":cleanedDate,
+                "Time":cleanedTime,
+                "Tweet":rheum_tweet_text
+                }])
+            
+            
+            print ("succesfully stored")
+#             rheumFile.write(data)
+#             rheumFile.close()
+#==============================================================================
             return True
         except (BaseException) as e:
             print ('Data not being collected', e)
@@ -44,7 +65,8 @@ class diseaseCommListener(StreamListener):
 auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_secret)
 tweet_Stream = Stream(auth, diseaseCommListener())
-tweet_Stream.filter(track=['#rheum'])
+tweet_Stream.filter(track=['#rheum, #ra, #rheumatoid'], languages=["en"])
+
 
     
 
