@@ -18,13 +18,6 @@ consumer_secret = "1iIxxiQESAacaUy0vn3Git9D5MDP9WJtiwlmI5zYl06NU2dZK3"
 access_token = "119014719-V9cE1ukf008v6eUSAmfN0LDEIUpMs9wEKJcHdznH"
 access_secret = "qshdRpZ2jKq7CCYkCarr5ZYjqtxGnAZhwyNPFn010b0a4"
 
-#==============================================================================
-# api = tweepy.API(auth)
-# 
-# public_tweets = api.home_timeline()
-# for tweets in public_tweets:
-#     print (t.text)
-#==============================================================================
 clientConnect = MongoClient()
 db = clientConnect.ABCi_twitter_analysis_DB
 
@@ -49,12 +42,9 @@ class diseaseCommListener(StreamListener):
                 "Tweet":rheum_tweet_text
                 }])
             
-            
             print ("succesfully stored")
-#             rheumFile.write(data)
-#             rheumFile.close()
-#==============================================================================
             return True
+        
         except (BaseException) as e:
             print ('Data not being collected', e)
             time.sleep(5)

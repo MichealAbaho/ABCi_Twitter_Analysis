@@ -48,9 +48,7 @@ class diabetesStream(StreamListener):
             
             
             print ("succesfully stored")
-#             rheumFile.write(data)
-#             rheumFile.close()
-#==============================================================================
+
             return True
         except (BaseException) as e:
             print ('Data not being collected', e)
