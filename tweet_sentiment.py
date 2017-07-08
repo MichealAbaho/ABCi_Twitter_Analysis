@@ -7,47 +7,75 @@ Created on Wed Jun 28 11:13:42 2017
 from nltk.corpus import wordnet, opinion_lexicon
 from nltk.tokenize import word_tokenize
 from itertools import product
+from operator import itemgetter
 import numpy as np
 import re
 import pandas as pd
+import math as mt
 
 def tweet_opinion():
-    fh = pd.read_csv('rheum_tweets_analysis_file.csv')
+    fh = pd.read_csv('diabetes_tweets_test_file.csv')
     
-    p = []
+    advise_associated_items = []
     set_of_TF = []
     word_weight = {}
+    tweets = []
+    Usernames = []
     
     syns_advise = wordnet.synsets('advise')[1].name()
     
-    for tweet in fh['Tweet']:
+    for user,tweet in zip(fh['Username'], fh['Tweet']):
         tweet = (str(tweet).strip('[]'))
-        app_comma = re.compile(r"[',]")
+        app_comma = re.compile("[',]")
         tweet = app_comma.sub('', tweet)
         tweet = tweet.split()
-        
+        word_weight.clear()       
         for j in tweet:
-            j_syns = wordnet.synsets(j)
-            word_weight.clear()
-            if (len(j_syns) != 0):
-                j_syn = j_syns[0].name()
+            j_syns = wordnet.synsets(j)       
+            if ((len(j_syns)) != 0):
+                j_syns = j_syns[0].name()
                 x = wordnet.synset(syns_advise)
-                y = wordnet.synset(j_syn)
+                y = wordnet.synset(j_syns)
                 sim_weight = (x.wup_similarity(y))
-                word_weight[j] = sim_weight
-        most_similar_word = max(word_weight, key=word_weight.get)  # Just use 'min' instead of 'max' for minimum.
-        print ((most_similar_word))
+                word_weight[j] = round(sim_weight, 4)
         
+        advise_associated_items = sorted(list(word_weight.values()))
+        top_three_words = dict(sorted(word_weight.items(), key=itemgetter(1), reverse=True)[:3]) 
+        top_three_words = dict((k.lower(), v) for k,v in top_three_words.items())
+        top_three_words = list(top_three_words.values())                  
+        if(len(advise_associated_items) >= 2):
+            term_list = [x for x in advise_associated_items if x >= 0.20]
+            term_frequency_weight = (len(term_list)/len(advise_associated_items))
+            term_frequency_weight = round(term_frequency_weight, 2)
+            set_of_TF.append(term_frequency_weight)
+            tweets.append(top_three_words)
+            Usernames.append(user)
+    
+    for i, weight in enumerate(set_of_TF):
+        if (weight < 0.25):
+            set_of_TF[i] = "not_advise"
+        elif (0.25 <= weight < 0.5):
+            set_of_TF[i] = "moderately_advise"
+        elif (0.5 <= weight < 0.75):
+            set_of_TF[i] = "mostly_advise"
+        elif (0.75 <= weight <= 1):
+            set_of_TF[i] = "purely_advise"
+                     
+    d = pd.DataFrame({'Username': Usernames,'Tweet':tweets, 'TF-weight':set_of_TF}) 
+    d.set_index('Tweet', inplace=True)
+    d.to_csv('adv_weka_test_set_file.csv')     
+            
 #==============================================================================
+#             term_frequency_weight = mt.fsum([advise_associated_items[-1], advise_associated_items[-2]])
+#             term_frequency_weight = round(term_frequency_weight, 2)
+#             if (term_frequency_weight >= 0.45):
+#         most_similar_word = max(word_weight, key=word_weight.get)  # Just use 'min' instead of 'max' for minimum.
+#            
 #         TF = tweet.count(most_similar_word)/len(tweet)
 #         p.append(most_similar_word)
 #         set_of_TF.append(TF)
-#     
-#     d = pd.DataFrame({'Advise_associated_Term':p, 'TF':set_of_TF}) 
-#     d.set_index('Advise_associated_Term', inplace=True)
-#     d.to_csv('Advise_Trainin_set.csv')
-#     
 #==============================================================================
+    
     
 
 #==============================================================================
