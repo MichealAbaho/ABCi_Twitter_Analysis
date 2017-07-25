@@ -5,8 +5,6 @@ Created on Sat Jun 24 16:19:05 2017
 @author: Mike
 """
 import tweepy 
-import db_connect
-from db_connect import dbConnection
 from pymongo import MongoClient
 from tweepy import Stream
 from tweepy import OAuthHandler

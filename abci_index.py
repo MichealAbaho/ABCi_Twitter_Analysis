@@ -4,13 +4,11 @@ Created on Tue Jun 20 10:23:35 2017
 
 @author: Mike
 """
-import tweepy
 from tweepy import Stream
 from tweepy import OAuthHandler
 from tweepy.streaming import StreamListener
 from datetime import datetime 
 from pymongo import MongoClient
-import pandas as pd
 import time
 
 consumer_key = "U7Tn8KhB97G91D748zGTfqK0Z"

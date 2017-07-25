@@ -4,9 +4,6 @@ Created on Fri Jun 23 15:08:57 2017
 
 @author: Mike
 """
-import tweepy 
-import db_connect
-from db_connect import dbConnection
 from pymongo import MongoClient
 from tweepy import Stream
 from tweepy import OAuthHandler
@@ -19,8 +16,6 @@ consumer_secret = "LggyxddfiaWAermrHJ35VYc4p8Fve7QajVpN6WvsM5V61S0MnG"
 access_token = "119014719-aAtMNFuvLgf49wd6CukwfmEgXJgRGrNICyZPAyuA"
 access_secret = "CX9GdbgCovWKS5xB8D2Nxbpt6xWhYOEQjBn1brwaWBSu1"
 
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_secret)
 
 clientConnect = MongoClient()
 db = clientConnect.ABCi_twitter_analysis_DB
