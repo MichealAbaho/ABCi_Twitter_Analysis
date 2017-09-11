@@ -11,6 +11,7 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 import pandas as pd
 import re
+import os
 
 
 class processTweets:
@@ -24,17 +25,17 @@ class processTweets:
         #lists to hold filtered tweets and usernames
         filtered_tweet = []
         userNames =[]     
+        working_directory()
         #pre-processing the tweets, filter out special characters, non-words, stemming and duplicates
         try:
-            unwanted_char = [ "\n","(\\n)", "#\w+", "http.{1,30}", "[.,;:'!?$#&=\+\-\*\/\(\)\|\d{1,3}]", "@\w+",
+            unwanted_char = [ "\n", "(\\n)", "#\w+", "http.{1,30}", "[.,;:'!?$#&=\+\-\*\/\(\)\|\d{1,3}]", "@\w+",
                              "\nhttps:.{1,30}",  "\u2026", "RT", "(&amp)", "("")", "('')"]
             
             #file tostore all hash tags
-            other_hastags_file = open('C:\\Users\\Mike\\Documents\\GitHub\\ABCi_Twitter_Analysis\\rheum\\new_set\\rheumatoid-hashtags.txt', 'a+')
-            unwanted_hasthtags = ['#rheumatoidarthritis', '#rheumatoid', '#rheum', '#ra']
+            other_hastags_file = open('diabetes\\diabetes-hashtags.txt', 'a+')
+            unwanted_hasthtags = ['#diabetes', '#diabetics', "#diabetic"]
             for tweet in self.__dbItems:
                 cleaned_tweet = tweet['Tweet'].split(' https')[0]
-                cleaned_tweet.replace('\n', '')
                 unwanted_twitter_users = re.search('(Dr.{1,30})', tweet['User-Name'])
                 hashtags_mentions = otherthemes(cleaned_tweet)
                 for hashtag in hashtags_mentions:
@@ -46,16 +47,22 @@ class processTweets:
                     cleaned_tweet = x.sub("", cleaned_tweet)
                     
                 tweet_broken_down = nltk_stop_stem(cleaned_tweet)
-                if ((tweet_broken_down not in filtered_tweet) and (unwanted_twitter_users is None) and (len(tweet_broken_down) < 200)):           
+                if ((tweet_broken_down not in filtered_tweet) and (unwanted_twitter_users is None)):           
                     userNames.append(tweet['User-Name']) 
                     filtered_tweet.append(tweet_broken_down)
-                
+            
+            #other_hastags_file.close()
             analysisFrame = pd.DataFrame({'Username': userNames, 'Tweet':filtered_tweet})
             analysisFrame.set_index('Username', inplace=True)
-            analysisFrame.to_csv('C:\\Users\\Mike\\Documents\\GitHub\\ABCi_Twitter_Analysis\\rheum\\new_set\\rheumatoid-tweets-analysis.csv')      
-            other_hastags_file.close()        
+            analysisFrame.to_csv('diabetes\\diabetes-tweets-analysis.csv')      
+            #other_hastags_file.close()        
         except Exception as e:
             print(str(e))
+
+#changing default working directory to a directory easily accessed
+def working_directory():
+    current_wd = os.getcwd()
+    return current_wd
 
 #removing stop words and steming text from tweet
 def nltk_stop_stem(tweet):
@@ -63,7 +70,7 @@ def nltk_stop_stem(tweet):
     stop_words = set(stopwords.words("english"))
     tokenized_tweet = word_tokenize(tweet)
     for word in tokenized_tweet:
-        if word not in stop_words:
+        if nltk_stemming(word).lower() not in stop_words:
             filtered_sentence.append(nltk_lemmatize(word))
     return filtered_sentence
 
@@ -92,11 +99,9 @@ def tokens_to_list(tweettokens):
     return tweet
 
 #creating a connection to the database 
-db_client = MongoClient()
-db_connect = db_client.ABCi_twitter_analysis_DB
-db_items = db_connect.live_diabetes_tweets.find()
-
-#exectuion of the class
+db_client = MongoClient('localhost', 27017)
+db_connect = db_client['ABCi_twitter_analysis_DB']
+db_items = db_connect['live_diabetes_tweets'].find()
 tweetfilter = processTweets(db_client, db_connect, db_items)
 tweetfilter.process()
 
