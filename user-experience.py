@@ -4,22 +4,18 @@ Created on Thu Jul  6 13:10:42 2017
 
 @author: Mike
 """
-from nltk.corpus import wordnet, opinion_lexicon
+from nltk.corpus import opinion_lexicon
 from nltk.tokenize import word_tokenize
-from itertools import product
-from operator import itemgetter
-import numpy as np
 import re
 import pandas as pd
-import math as mt
 
 def user_exp_opinion():
-    fh = pd.read_csv('diabetes_tweets_test_file.csv')
+    fh = pd.read_csv('diabetes-tweets-analysis.csv')
 
     tweets = []
-    Usernames = []
+    usernames = []
     
-    interested_characters = ['dr', 'doc', 'nhs', 'gp', 'hospital', 'covered', 'trumpcare', 'doctor', "doctor's"]
+    interested_characters = ['dr', 'doc', 'nhs', 'gp', 'hospital', 'doctor', "doctor's"]
     for user,tweet in zip(fh['Username'], fh['Tweet']):
         tweet = (str(tweet).strip('[]'))
         app_comma = re.compile("[',]")
@@ -31,53 +27,49 @@ def user_exp_opinion():
 
         if(len(shared_items) != 0):
             tweets.append(tweet)
+            usernames.append(user)
             
-    return (pd.DataFrame({'Tweets': tweets}))      
+    return (pd.DataFrame({'Username': usernames, 'Tweets': tweets}))      
 
 def comp_satisfied():
-    exp_tweets = []
-    set_of_exp = []
-    satisfy_word_weight = {}
-    dissap_word_weight = {}
-    syns_satisfy = wordnet.synsets('satisfy')[0].name()
-    syns_disapointment = wordnet.synsets('disappointment')[0].name()
     
-    
-    for tweet in user_exp_opinion()['Tweets']:
-        satisfy_word_weight.clear()
-        dissap_word_weight.clear()
-        for j in tweet:
-            j_syns = wordnet.synsets(j)
+    users_series = user_exp_opinion()['Username']
+    tweet_series = user_exp_opinion()['Tweets']
+    set_of_pos = word_tokenize(opinion_lexicon.raw('positive-words.txt'))
+    set_of_neg = word_tokenize(opinion_lexicon.raw('negative-words.txt'))
+    tweet_positive_words = []
+    tweet_negative_words = []
+    tweets = []
+    Username = []
+    sentiment = []
+
+    try:
+        for user,tweet in zip(users_series, tweet_series):
+            current_tpw_length = len(tweet_positive_words)
+            current_tnw_length = len(tweet_negative_words)
+            for word in tweet:
+                if word in set_of_pos:
+                    tweet_positive_words.append(word)
+                elif word in set_of_neg:
+                    tweet_negative_words.append(word)
             
-            if (len(j_syns) != 0):
-                j_syns = j_syns[0].name()
-                x = wordnet.synset(syns_satisfy)
-                y = wordnet.synset(syns_disapointment)
-                z = wordnet.synset(j_syns)
-                
-                s_sim_weight = (x.wup_similarity(z))
-                d_sim_weight = (y.wup_similarity(z))
-                
-                if ((s_sim_weight is not None) and (d_sim_weight is not None)):
-                    satisfy_word_weight[j] = round(s_sim_weight, 4)
-                    dissap_word_weight[j] = round(d_sim_weight, 4)
-                        
-        if((np.sum([len(satisfy_word_weight), len(dissap_word_weight)])) >= 6):
-            top_three_satisfy = dict(sorted(satisfy_word_weight.items(), key=itemgetter(1), reverse=True)[:3]) 
-            top_three_disappoint = dict(sorted(dissap_word_weight.items(), key=itemgetter(1), reverse=True)[:3])
-            sum_satisfy = mt.fsum(list(top_three_satisfy.values()))    
-            sum_disapoint = mt.fsum(list(top_three_disappoint.values()))
+            new_tpw_length = len(tweet_positive_words) - current_tpw_length
+            new_tnw_length = len(tweet_negative_words) - current_tnw_length                    
             
-            if (sum_satisfy > sum_disapoint):
-                set_of_exp.append('satisfied')
-                exp_tweets.append(list(top_three_satisfy.keys()))
-            elif (sum_disapoint > sum_satisfy):
-                set_of_exp.append('dissapointed')
-                exp_tweets.append(list(top_three_disappoint.keys()))
-                    
-    d = pd.DataFrame({'Tweet':exp_tweets, 'Experience':set_of_exp}) 
-    d.set_index('Tweet', inplace=True)
-    d.to_csv('User_exp_set_file.csv')     
+            if (new_tpw_length >= 2):
+                sentiment.append('Pos')
+            elif(new_tnw_length >= 3):
+                sentiment.append('Neg')
+            else:
+                sentiment.append('Neutral')
+            tweets.append(tweet)
+            Username.append(user)
+        
+        sentiFrame = pd.DataFrame({'Username':Username, 'Tweet':tweets,'Sentiment':sentiment})
+        sentiFrame.set_index('Username', inplace=True)
+        sentiFrame.to_csv('C:\\Users\\Mike\\Documents\\Github\\ABCi_Twitter_Analysis\\diabetes\\new_set\\user-experience2.csv')                        
+    except Exception as e:
+        print (str(e))    
 
 
 comp_satisfied()
