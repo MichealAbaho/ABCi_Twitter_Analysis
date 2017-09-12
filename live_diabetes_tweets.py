@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Jun 24 16:19:05 2017
+Created on Fri Jun 23 15:08:57 2017
 
 @author: Mike
 """
-import tweepy 
 from pymongo import MongoClient
 from tweepy import Stream
 from tweepy import OAuthHandler
@@ -12,13 +11,11 @@ from tweepy.streaming import StreamListener
 from datetime import datetime 
 import time
 
-consumer_key = "B0O6b0tyHMNTQe0KBh6VV2S6m"
-consumer_secret = "BZX2vZKQX8eyL2jjvcpr6kXkqP9mPXrR1b26N54dz2hx6MUYb6"
-access_token = "119014719-F7ne0FH2ntxRbllIzFvw3A44fYYyXPfJQfTGkb9d"
-access_secret = "sA3jT2AT2wrIvahDB1Zkh8elX99I9urvBOVg6EShOowQi"
+consumer_key = "LhYrTXI16wFmjHe1S8ETRClYF"
+consumer_secret = "LggyxddfiaWAermrHJ35VYc4p8Fve7QajVpN6WvsM5V61S0MnG"
+access_token = "119014719-aAtMNFuvLgf49wd6CukwfmEgXJgRGrNICyZPAyuA"
+access_secret = "CX9GdbgCovWKS5xB8D2Nxbpt6xWhYOEQjBn1brwaWBSu1"
 
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_secret)
 
 clientConnect = MongoClient()
 db = clientConnect.ABCi_twitter_analysis_DB
@@ -36,7 +33,7 @@ class diabetesStream(StreamListener):
             cleanedDate = diabetes_tweet_date.strftime('%d/%m/%Y')
             
             
-            db.live_coloncancer_tweets.insert_many([{
+            db.live_diabetes_tweets.insert_many([{
                 "User-Name":diabetes_tweeter,
                 "Location": diabetes_tweet_loc,
                 "Date":cleanedDate,
@@ -46,20 +43,22 @@ class diabetesStream(StreamListener):
             
             
             print ("succesfully stored")
-
+#             rheumFile.write(data)
+#             rheumFile.close()
+#==============================================================================
             return True
         except (BaseException) as e:
             print ('Data not being collected', e)
             time.sleep(5)
     
     def on_error(self, status):
-        if(status == 420):
-            print ("Just encountered an error on connection")
-            return False
-        
+    	if(status == 420):
+    		print ("Just encountered an error on connection")
+    		return False
+        	
         
 auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_secret)
 tweet_Stream = Stream(auth, diabetesStream())
-tweet_Stream.filter(track=['#coloncancer'], languages=["en"], async=True)
+tweet_Stream.filter(track=['#diabetes, #diabetic, #diabetics'], languages=["en"], async=True)
     

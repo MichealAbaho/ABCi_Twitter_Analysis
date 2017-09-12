@@ -48,12 +48,14 @@ class diseaseCommListener(StreamListener):
             time.sleep(5)
     
     def on_error(self, status):
-        print (status)
+        if(status == 420):
+            print (status)
+            return False
         
 auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_secret)
 tweet_Stream = Stream(auth, diseaseCommListener())
-tweet_Stream.filter(track=['#rheum, #ra, #rheumatoid'], languages=["en"])
+tweet_Stream.filter(track=['#rheum, #rheumatoidarthritis, #rheumatoid'], languages=["en"], async=True)
 
 
     
