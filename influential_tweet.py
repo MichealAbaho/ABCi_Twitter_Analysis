@@ -4,18 +4,15 @@ Created on Tue Jul 25 14:22:36 2017
 
 @author: Mike
 """
+from tweet_processing import working_directory
 from pymongo import MongoClient
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-from operator import itemgetter
 import itertools
 import re
 import pandas as pd
 import numpy as np
 import collections
 import matplotlib.pyplot as plt
-
+working_directory()
 
 class retweetExtract:
 
@@ -30,7 +27,7 @@ class retweetExtract:
         rtFrame = self.process()
         rtFrameList = np.array(rtFrame).tolist()
         tuple_list_users_tweets = [(i[0], i[1]) for i in rtFrameList]
-            
+        #comparing the tweet text and username to identify a retweet, a tweet is a retweet is the text is similar but usernames are differnet    
         for a,b in itertools.combinations(tuple_list_users_tweets, 2):
             if((a[1] == b[1]) and (a[0] != b[0])):
                 if ((a not in retweets) and (b not in retweets)):
@@ -39,14 +36,14 @@ class retweetExtract:
                     
         t = pd.DataFrame({'Retweets':retweets})
         t.set_index('Retweets', inplace=True)
-        t.to_csv('C:\\Users\\Mike\\Documents\\Github\\ABCi_Twitter_Analysis\\diabetes\\new_set\\retweets.csv')
+        t.to_csv('diabetes\\retweets.csv')
         print (len(retweets))    
         
     def process(self):
         #lists to hold filtered tweets and usernames
         filtered_tweet = []
         userNames =[]
-        #pre-processing the tweets, filter out special characters, non-words, stemming and duplicates
+        #pre-processing the tweets, filter out special characters, non-words characters, duplicates and tweets from doctors
         try:
             unwanted_char = [ "\n","(\\n)", "#\w+", "http.{1,30}", "[.,;'!?$#&=\+\-\*\/\(\)\|]", 
                              "\nhttps:.{1,30}",  "\u2026", "(&amp)", "("")", "('')"]
@@ -70,66 +67,61 @@ class retweetExtract:
         except Exception as e:
             print(str(e))
 
-#most retweeted tweet
+#plotting the tweets with the most number of retweets
 def most_retweeted_tweet():
-    retweetFrame = pd.read_csv('C:\\Users\\Mike\\Documents\\Github\\ABCi_Twitter_Analysis\\diabetes\\new_set\\retweets.csv')
+    retweetFrame = pd.read_csv('diabetes\\retweets.csv')
     retweet_list = []
+    twitter_handles = []
+    proc = [r'(RT.*:)', r'(\\\\u\w+)', r'(\\\\n)']
     for tupleitem in retweetFrame['Retweets']:
         searchText = tupleitem.split(", '")[1]
         retweet_list.append(searchText[0:-2])
-    most_popular_tweets = (dict(collections.Counter(retweet_list).most_common(10)))
+    most_popular_tweets = (dict(collections.Counter(retweet_list).most_common(9)))
+    retweet_list.clear()
+    for i in list(most_popular_tweets.keys()):
+        search_twitter_handle = re.search(r'(@.+:)', i)
+        search_twitter_handle = re.sub(r':', '', search_twitter_handle.group())
+        twitter_handles.append(search_twitter_handle)
+        for exp in proc:
+            i = re.sub(exp, '', i)
+        retweet_list.append(i)
+        print(i)
+        
+    most_popular_tweets_file = pd.DataFrame({'Tweeter-Handle': twitter_handles, 
+                                             'Tweet':retweet_list, 
+                                             'Number of retweets': list(most_popular_tweets.values())})
+    most_popular_tweets_file.set_index('Tweeter-Handle', inplace=True)
+    #most_popular_tweets_file.to_csv('/Volumes/MYKEL/ABCi_Twitter_Analysis/diabetes/new_set/most_popular_tweets.csv')
     
-    plt.bar(range(len(most_popular_tweets)), most_popular_tweets.values(), align='center')
-    plt.xticks(range(len(most_popular_tweets)), most_popular_tweets.keys())
+    tweet_keys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+    bax = plt.subplot2grid((10,1), (0,0), colspan=1, rowspan=10) 
+    bax.bar(range(len(most_popular_tweets)), most_popular_tweets.values(), align='center', color='#363363')
+    plt.xticks(range(len(most_popular_tweets)), tweet_keys, fontsize=13, color='k')
+    bax.set_title('Most Popular Tweets', fontsize=15, color='k')   
+    plt.ylabel('No of retweets', fontsize=14, color='k')
+    plt.xlabel('Tweet', fontsize=14, color='k')
+    j = 250
+    
+    font = {
+        'color':  '#483DEF',
+        'size': 12,
+        'style': 'italic'
+        }
+    
+    for x,y,z in zip(tweet_keys, twitter_handles, retweet_list):
+        plt.text(9, j, 'twitter_handle'+': '+y, fontsize=12  )
+        plt.text(9, j-15, x+': '+z, fontdict=font) 
+        j -= 30
+    
     plt.show()
     
-#==============================================================================
-#     word_count = {} 
-#     for word in retweet_list:
-#         if word in word_count:
-#             word_count[word] += 1
-#         else:
-#             word_count[word] = 1
-#     
-#     popular_words = (sorted(word_count.items(), key=itemgetter(1), reverse=True)[:5])
-#     print(popular_words)
-#==============================================================================
-        
-#==============================================================================
-#         x = re.compile(r"(RT.*)")
-#         searchText = re.search(x, tupleitem)
-#         if searchText is not None:
-#             searchText = re.sub(r"[')]", "", searchText.group(0))
-#             retweet_list.append(searchText)
-#         
-#     print (len(retweet_list))    
-#==============================================================================
-        
 
-    
-#removing stop words and steming text from tweet
-def nltk_stop_stem(tweet):
-    filtered_sentence = []
-    stop_words = set(stopwords.words("english"))
-    tokenized_tweet = word_tokenize(tweet)
-    for word in tokenized_tweet:
-        if word not in stop_words:
-            filtered_sentence.append(nltk_lemmatize(word))
-    return filtered_sentence
+#creating a connection to the database 
+db_client = MongoClient()
+db_connect = db_client.ABCi_twitter_analysis_DB
+db_items = db_connect.live_diabetes_tweets.find()
 
-#retreiving a generic term that can represent sever synonyms (lemmatizing)
-def nltk_lemmatize(tweet):
-    ls = WordNetLemmatizer()
-    return (ls.lemmatize(tweet))
-
-#==============================================================================
-# #creating a connection to the database 
-# db_client = MongoClient()
-# db_connect = db_client.ABCi_twitter_analysis_DB
-# db_items = db_connect.live_diabetes_tweets.find()
-# 
-# #exectuion of the class
-# tweetfilter = retweetExtract(db_client, db_connect, db_items)
-# tweetfilter.retweet_extraction()
-#==============================================================================
+#exectuion of the class
+tweetfilter = retweetExtract(db_client, db_connect, db_items)
+tweetfilter.retweet_extraction()
 most_retweeted_tweet()
